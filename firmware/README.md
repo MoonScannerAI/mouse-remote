@@ -50,6 +50,21 @@ Solid blue means a phone is connected and authenticated.
 Open `INFO_UF2.TXT` on the drive. It should show a bootloader version and
 `SoftDevice: S140 6.1.1`. CircuitPython needs that SoftDevice.
 
+### If it shows a different SoftDevice (e.g. `S132 5.1.0`)
+
+CircuitPython will copy over but never start: no CIRCUITPY drive appears and Windows
+doesn't see the dongle at all. This happened on a real dongle with bootloader 0.7.1.
+The fix is to load makerdiary's bootloader package, which includes S140 6.1.1:
+
+1. `pip install adafruit-nrfutil` and download
+   `uf2_bootloader-nrf52840_mdk_usb_dongle-0.7.1-s140_6.1.1.zip` from
+   <https://github.com/makerdiary/nrf52840-mdk-usb-dongle/tree/main/firmware/uf2_bootloader/0.7.1>.
+2. Enter the UF2 bootloader (hold the button while plugging in). Find its COM port
+   under "Ports (COM & LPT)" in Device Manager.
+3. Run `python -m nordicsemi dfu serial --package uf2_bootloader-nrf52840_mdk_usb_dongle-0.7.1-s140_6.1.1.zip -p COM4 -b 115200 --singlebank`
+   (replace COM4 with your port).
+4. The `UF2BOOT` drive comes back, and `INFO_UF2.TXT` now shows `S140 6.1.1`. Continue with Step 2.
+
 ### If no UF2 drive appears: older "Open Bootloader"
 
 Dongles sold before mid-2020 came with Nordic's **Open Bootloader**. You can tell
