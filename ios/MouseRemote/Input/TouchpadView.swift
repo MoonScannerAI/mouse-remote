@@ -2,12 +2,13 @@ import SwiftUI
 import UIKit
 
 /// Raw-touch touchpad.
-/// - 1 finger: move (with acceleration); tap = left click.
+/// - 1 finger: move (optional acceleration); tap = left click.
 /// - 2 fingers: pan = scroll; tap = right click.
 /// - Double-tap-and-hold, then drag: left button held until the finger lifts.
 final class TouchpadView: UIView {
     weak var ble: BLEManager?
     var pointerSpeed: Double = SettingsDefault.pointerSpeed
+    var pointerAcceleration: Bool = SettingsDefault.pointerAcceleration
     var scrollSpeed: Double = SettingsDefault.scrollSpeed
     var naturalScroll: Bool = SettingsDefault.naturalScroll
 
@@ -225,7 +226,8 @@ final class TouchpadView: UIView {
     private func movePointer(dx: Double, dy: Double, dt: Double) {
         let velocity = hypot(dx, dy) / dt // pt/s
         // Linear below ~120 pt/s for precision, ramping up to 3.5x for fast flicks.
-        let acceleration = 1.0 + min(max(velocity - 120.0, 0) / 600.0, 2.5)
+        // Off: purely linear (e.g. when Windows "Enhance pointer precision" is on).
+        let acceleration = pointerAcceleration ? 1.0 + min(max(velocity - 120.0, 0) / 600.0, 2.5) : 1.0
         let gain = 1.6 * pointerSpeed * acceleration
         remainderX += dx * gain
         remainderY += dy * gain
@@ -273,6 +275,7 @@ final class TouchpadView: UIView {
 struct Touchpad: UIViewRepresentable {
     let ble: BLEManager
     var pointerSpeed: Double
+    var pointerAcceleration: Bool
     var scrollSpeed: Double
     var naturalScroll: Bool
 
@@ -289,6 +292,7 @@ struct Touchpad: UIViewRepresentable {
     private func apply(to view: TouchpadView) {
         view.ble = ble
         view.pointerSpeed = pointerSpeed
+        view.pointerAcceleration = pointerAcceleration
         view.scrollSpeed = scrollSpeed
         view.naturalScroll = naturalScroll
     }

@@ -8,6 +8,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage(SettingsKey.pointerSpeed) private var pointerSpeed: Double = SettingsDefault.pointerSpeed
+    @AppStorage(SettingsKey.pointerAcceleration) private var pointerAcceleration: Bool = SettingsDefault.pointerAcceleration
     @AppStorage(SettingsKey.scrollSpeed) private var scrollSpeed: Double = SettingsDefault.scrollSpeed
     @AppStorage(SettingsKey.naturalScroll) private var naturalScroll: Bool = SettingsDefault.naturalScroll
     @AppStorage(SettingsKey.showKeys) private var showKeys: Bool = SettingsDefault.showKeys
@@ -43,6 +44,7 @@ struct ContentView: View {
 
             Touchpad(ble: ble,
                      pointerSpeed: pointerSpeed,
+                     pointerAcceleration: pointerAcceleration,
                      scrollSpeed: scrollSpeed,
                      naturalScroll: naturalScroll)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

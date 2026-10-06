@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage(SettingsKey.pointerSpeed) private var pointerSpeed: Double = SettingsDefault.pointerSpeed
+    @AppStorage(SettingsKey.pointerAcceleration) private var pointerAcceleration: Bool = SettingsDefault.pointerAcceleration
     @AppStorage(SettingsKey.scrollSpeed) private var scrollSpeed: Double = SettingsDefault.scrollSpeed
     @AppStorage(SettingsKey.naturalScroll) private var naturalScroll: Bool = SettingsDefault.naturalScroll
     @AppStorage(SettingsKey.haptics) private var haptics: Bool = SettingsDefault.haptics
@@ -15,11 +16,16 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Pointer") {
+                Section {
                     VStack(alignment: .leading) {
                         Text("Pointer speed: \(pointerSpeed, specifier: "%.1f")×")
                         Slider(value: $pointerSpeed, in: 0.3...3.0, step: 0.1)
                     }
+                    Toggle("Acceleration", isOn: $pointerAcceleration)
+                } header: {
+                    Text("Pointer")
+                } footer: {
+                    Text("Faster swipes move the cursor further. Turn off if Windows \"Enhance pointer precision\" is on, so acceleration isn't applied twice.")
                 }
 
                 Section("Scrolling") {
