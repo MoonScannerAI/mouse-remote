@@ -18,7 +18,15 @@ struct KeyboardCapture: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
-        // Autocorrect, predictions, smart punctuation, swipe typing: all system defaults.
+        // Plain typing: no autocorrect, predictions, auto-capitalization or smart punctuation.
+        // (The autocorrect bubble also floated over the touchpad.)
+        textView.autocorrectionType = .no
+        textView.spellCheckingType = .no
+        textView.autocapitalizationType = .none
+        textView.inlinePredictionType = .no
+        textView.smartQuotesType = .no
+        textView.smartDashesType = .no
+        textView.smartInsertDeleteType = .no
         textView.delegate = context.coordinator
         textView.text = Coordinator.sentinel
         textView.backgroundColor = .clear
