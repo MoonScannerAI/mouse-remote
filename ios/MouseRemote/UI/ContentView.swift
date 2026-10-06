@@ -21,11 +21,8 @@ struct ContentView: View {
 
             toolbarRow
 
-            VStack(spacing: 8) {
-                ModifierRow()
-                if showKeys {
-                    SpecialKeysPanel()
-                }
+            if showKeys {
+                SpecialKeysPanel()
             }
 
             HStack(spacing: 10) {
@@ -44,12 +41,14 @@ struct ContentView: View {
             }
             .frame(height: 76)
 
-            // Touchpad sits last so it ends up directly above the system keyboard.
             Touchpad(ble: ble,
                      pointerSpeed: pointerSpeed,
                      scrollSpeed: scrollSpeed,
                      naturalScroll: naturalScroll)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Modifier row sits last so it ends up directly above the system keyboard.
+            ModifierRow()
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
