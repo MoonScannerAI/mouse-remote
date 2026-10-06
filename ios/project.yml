@@ -1,0 +1,67 @@
+name: MouseRemote
+
+options:
+  bundleIdPrefix: com.andyli
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+
+targets:
+  MouseRemote:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MouseRemote
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Mouse Remote
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        NSBluetoothAlwaysUsageDescription: Mouse Remote uses Bluetooth to connect to your MouseRemote USB dongle and control your PC.
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Dark
+    settings:
+      base:
+        PRODUCT_NAME: MouseRemote
+        PRODUCT_BUNDLE_IDENTIFIER: com.andyli.mouseremote
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+        ENABLE_PREVIEWS: NO
+
+schemes:
+  MouseRemote:
+    build:
+      targets:
+        MouseRemote: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

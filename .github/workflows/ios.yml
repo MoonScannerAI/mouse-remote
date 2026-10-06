@@ -1,0 +1,140 @@
+# Builds the iOS app on a GitHub macOS runner and uploads it to TestFlight.
+# Signing is fully cloud-managed with an App Store Connect API key (no manual
+# certificates or profiles). See docs/SETUP_APPLE_AND_GITHUB.md.
+#
+# Required repository secrets:
+#   APPLE_TEAM_ID  10-character Apple Developer Team ID
+#   ASC_KEY_ID     App Store Connect API key ID
+#   ASC_ISSUER_ID  App Store Connect issuer ID (a UUID)
+#   ASC_KEY_P8     FULL TEXT of the AuthKey_XXXX.p8 file (including the
+#                  BEGIN/END PRIVATE KEY lines). Base64 of the file also works.
+#
+# The API key MUST have the **Admin** role: xcodebuild cloud signing of a
+# distribution certificate fails with "Cloud signing permission error" for
+# App Manager keys.
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build-and-upload:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      SCHEME: MouseRemote
+      KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+      ARCHIVE_PATH: ${{ runner.temp }}/MouseRemote.xcarchive
+      EXPORT_PATH: ${{ runner.temp }}/export
+      EXPORT_OPTIONS: ${{ runner.temp }}/ExportOptions.plist
+    steps:
+      - uses: actions/checkout@v4
+
+      # App Store Connect requires Xcode 26+ (iOS 26 SDK) for uploads.
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --show-sdk-version --sdk iphoneos || true
+
+      - name: Install XcodeGen and generate project
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Write App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if printf '%s' "$ASC_KEY_P8" | grep -q "BEGIN"; then
+            printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
+          else
+            printf '%s' "$ASC_KEY_P8" | base64 --decode > "$KEY_PATH"
+          fi
+          grep -q "BEGIN PRIVATE KEY" "$KEY_PATH" || { echo "::error::ASC_KEY_P8 is not a valid .p8 key"; exit 1; }
+
+      - name: Archive
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project MouseRemote.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            | tee "$RUNNER_TEMP/archive.log"
+
+      - name: Create ExportOptions.plist
+        run: |
+          cat > "$EXPORT_OPTIONS" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint "$EXPORT_OPTIONS"
+
+      # destination=upload makes xcodebuild sign (cloud distribution cert) and
+      # upload straight to App Store Connect / TestFlight.
+      - name: Export and upload to TestFlight
+        run: |
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist "$EXPORT_OPTIONS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            | tee "$RUNNER_TEMP/export.log"
+
+      - name: Upload debug artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-debug-${{ github.run_number }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/archive.log
+            ${{ runner.temp }}/export.log
+            ${{ runner.temp }}/export/
+            ${{ runner.temp }}/MouseRemote.xcarchive/Info.plist
+            ~/Library/Logs/DiagnosticReports/
+            ~/Library/Developer/Xcode/DerivedData/**/Logs/
+
+      - name: Remove API key
+        if: always()
+        run: rm -f "$KEY_PATH"

@@ -1,0 +1,26 @@
+# Xcode / iOS
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.xcarchive
+*.ipa
+*.dSYM.zip
+
+# Secrets
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+firmware/tests/__pycache__/
+.pytest_cache/
+.venv/
+venv/

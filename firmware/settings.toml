@@ -1,0 +1,5 @@
+# Turn off CircuitPython's built-in BLE "workflow" (BLE file editing service).
+# Without this, pressing the button at the wrong moment after start-up would
+# erase all BLE bonds and advertise a service that lets a bonded device edit
+# files on the dongle. MouseRemote does not need it.
+CIRCUITPY_BLE_WORKFLOW = false
