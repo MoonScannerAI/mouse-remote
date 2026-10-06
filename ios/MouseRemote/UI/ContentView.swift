@@ -13,17 +13,11 @@ struct ContentView: View {
     @AppStorage(SettingsKey.showKeys) private var showKeys: Bool = SettingsDefault.showKeys
 
     @State private var showSettings = false
-    @State private var keyboardActive = true
+    @State private var keyboardActive = false
 
     var body: some View {
         VStack(spacing: 10) {
             StatusBarView(showSettings: $showSettings)
-
-            Touchpad(ble: ble,
-                     pointerSpeed: pointerSpeed,
-                     scrollSpeed: scrollSpeed,
-                     naturalScroll: naturalScroll)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             toolbarRow
 
@@ -49,6 +43,13 @@ struct ContentView: View {
                            onUp: { ble.setButton(.right, down: false) })
             }
             .frame(height: 76)
+
+            // Touchpad sits last so it ends up directly above the system keyboard.
+            Touchpad(ble: ble,
+                     pointerSpeed: pointerSpeed,
+                     scrollSpeed: scrollSpeed,
+                     naturalScroll: naturalScroll)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
@@ -62,6 +63,7 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
+        .onAppear { showKeyboardSoon() }
         .onChange(of: ble.state, initial: true) { _, newState in
             UIApplication.shared.isIdleTimerDisabled = (newState == .connected)
         }
@@ -69,11 +71,21 @@ struct ContentView: View {
             switch phase {
             case .active:
                 ble.appDidBecomeActive()
+                showKeyboardSoon()
             case .background:
                 ble.appDidEnterBackground()
             default:
                 break
             }
+        }
+    }
+
+    /// Raise the system keyboard on launch / return to foreground. Deferred so the hidden
+    /// text view is attached to a window before it is asked to become first responder.
+    private func showKeyboardSoon() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            keyboardActive = true
         }
     }
 
