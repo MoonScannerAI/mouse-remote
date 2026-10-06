@@ -2,8 +2,9 @@ import SwiftUI
 import UIKit
 
 struct KeyButtonStyle: ButtonStyle {
-    var fill: Color = Color(white: 0.17)
-    var stroke: Color = .clear
+    var fill: Color = Palette.keyFill
+    var stroke: Color = Palette.keyBorder
+    var textColor: Color = Palette.text
     var height: CGFloat = 44
 
     func makeBody(configuration: Configuration) -> some View {
@@ -11,66 +12,37 @@ struct KeyButtonStyle: ButtonStyle {
             .font(.system(size: 15, weight: .semibold))
             .lineLimit(1)
             .minimumScaleFactor(0.6)
-            .foregroundStyle(Color.white)
+            .foregroundStyle(textColor)
             .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(configuration.isPressed ? Color(white: 0.34) : fill)
+                    .fill(configuration.isPressed ? Palette.keyPressed : fill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(stroke, lineWidth: 2)
+                    .stroke(stroke, lineWidth: 1.5)
             )
             .contentShape(Rectangle())
     }
 }
 
 enum KeyPage: String, CaseIterable, Identifiable {
-    case nav = "Nav"
     case function = "F1–F12"
     case shortcuts = "Shortcuts"
-    case media = "Media"
 
     var id: String { rawValue }
 }
 
-/// Sticky modifiers row + paged special keys.
+private let keyColumns6 = Array(repeating: GridItem(.flexible(), spacing: 6), count: 6)
+
+/// Sticky modifiers row (Win, Esc, Tab, Ctrl, Alt, Shift); always visible.
 @MainActor
-struct SpecialKeysPanel: View {
+struct ModifierRow: View {
     @EnvironmentObject private var ble: BLEManager
     @EnvironmentObject private var modifiers: ModifierState
-    @State private var page: KeyPage = .nav
-    @State private var altTabHeld = false
-
-    private let columns6 = Array(repeating: GridItem(.flexible(), spacing: 6), count: 6)
-    private let columns4 = Array(repeating: GridItem(.flexible(), spacing: 6), count: 4)
 
     var body: some View {
-        VStack(spacing: 8) {
-            modifierRow
-            Picker("Keys", selection: $page) {
-                ForEach(KeyPage.allCases) { p in
-                    Text(p.rawValue).tag(p)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            Group {
-                switch page {
-                case .nav: navPage
-                case .function: functionPage
-                case .shortcuts: shortcutsPage
-                case .media: mediaPage
-                }
-            }
-            .frame(height: 94, alignment: .top)
-        }
-    }
-
-    // MARK: Modifier row: Win, Esc, Tab, Ctrl, Alt, Shift
-
-    private var modifierRow: some View {
-        LazyVGrid(columns: columns6, spacing: 6) {
+        LazyVGrid(columns: keyColumns6, spacing: 6) {
             modifierButton(.win)
             Button("Esc") { tapKey(HIDKey.escape) }.buttonStyle(KeyButtonStyle())
             Button("Tab") { tapKey(HIDKey.tab) }.buttonStyle(KeyButtonStyle())
@@ -84,41 +56,60 @@ struct SpecialKeysPanel: View {
         let mode = modifiers.mode(modifier)
         let fill: Color
         let stroke: Color
+        let text: Color
         switch mode {
         case .off:
-            fill = Color(white: 0.17); stroke = .clear
+            fill = Palette.keyFill; stroke = Palette.keyBorder; text = Palette.text
         case .once:
-            fill = Color(white: 0.17); stroke = .accentColor
+            fill = Palette.keyFill; stroke = Palette.accent; text = Palette.text
         case .locked:
-            fill = .accentColor; stroke = .accentColor
+            fill = Palette.accent; stroke = Palette.accent; text = Palette.onAccent
         }
         return Button(modifier.title) {
             Haptics.key()
             modifiers.tap(modifier)
         }
-        .buttonStyle(KeyButtonStyle(fill: fill, stroke: stroke))
+        .buttonStyle(KeyButtonStyle(fill: fill, stroke: stroke, textColor: text))
         .accessibilityValue(mode == .off ? "Off" : (mode == .once ? "Next key" : "Locked"))
     }
 
-    // MARK: Pages
+    /// Single key, with any sticky modifiers applied.
+    private func tapKey(_ key: UInt8) {
+        Haptics.key()
+        ble.keyTap(modifiers: modifiers.consume(), key: key)
+    }
+}
 
-    private var navPage: some View {
-        LazyVGrid(columns: columns6, spacing: 6) {
-            Button("Home") { tapKey(HIDKey.home) }.buttonStyle(KeyButtonStyle())
-            Button("PgUp") { tapKey(HIDKey.pageUp) }.buttonStyle(KeyButtonStyle())
-            Button("↑") { tapKey(HIDKey.up) }.buttonStyle(KeyButtonStyle())
-            Button("PgDn") { tapKey(HIDKey.pageDown) }.buttonStyle(KeyButtonStyle())
-            Button("Del") { tapKey(HIDKey.delete) }.buttonStyle(KeyButtonStyle())
-            Button("⌫") { tapKey(HIDKey.backspace) }.buttonStyle(KeyButtonStyle())
+/// Paged special keys (F1-F12, shortcuts).
+@MainActor
+struct SpecialKeysPanel: View {
+    @EnvironmentObject private var ble: BLEManager
+    @EnvironmentObject private var modifiers: ModifierState
+    @State private var page: KeyPage = .function
+    @State private var altTabHeld = false
 
-            Button("End") { tapKey(HIDKey.end) }.buttonStyle(KeyButtonStyle())
-            Button("←") { tapKey(HIDKey.left) }.buttonStyle(KeyButtonStyle())
-            Button("↓") { tapKey(HIDKey.down) }.buttonStyle(KeyButtonStyle())
-            Button("→") { tapKey(HIDKey.right) }.buttonStyle(KeyButtonStyle())
-            Button("Start") { shortcut(HIDModifier.leftGUI, 0) }.buttonStyle(KeyButtonStyle())
-            Button("⏎") { tapKey(HIDKey.enter) }.buttonStyle(KeyButtonStyle())
+    private let columns6 = keyColumns6
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Picker("Keys", selection: $page) {
+                ForEach(KeyPage.allCases) { p in
+                    Text(p.rawValue).tag(p)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Group {
+                switch page {
+                case .function: functionPage
+                case .shortcuts: shortcutsPage
+                }
+            }
+            .frame(height: 94, alignment: .top)
         }
     }
+
+    // MARK: Pages
 
     private var functionPage: some View {
         LazyVGrid(columns: columns6, spacing: 6) {
@@ -134,8 +125,8 @@ struct SpecialKeysPanel: View {
                 // Alt+Tab: Alt stays down while held; "Tab ▸" cycles; releasing sends Alt up.
                 HoldButton(title: altTabHeld ? "Alt (held)" : "Alt+Tab",
                            fontSize: 15,
-                           color: UIColor(white: 0.17, alpha: 1),
                            pressedColor: UIColor.tintColor,
+                           pressedTextColor: Palette.uiOnAccent,
                            onDown: altTabBegin,
                            onUp: altTabEnd)
                     .frame(height: 44)
@@ -160,19 +151,6 @@ struct SpecialKeysPanel: View {
         }
     }
 
-    private var mediaPage: some View {
-        LazyVGrid(columns: columns4, spacing: 6) {
-            Button("Vol −") { media(ConsumerUsage.volumeDown) }.buttonStyle(KeyButtonStyle())
-            Button("Vol +") { media(ConsumerUsage.volumeUp) }.buttonStyle(KeyButtonStyle())
-            Button("Mute") { media(ConsumerUsage.mute) }.buttonStyle(KeyButtonStyle())
-            Button("Play/Pause") { media(ConsumerUsage.playPause) }.buttonStyle(KeyButtonStyle())
-            Button("Bright −") { media(ConsumerUsage.brightnessDown) }.buttonStyle(KeyButtonStyle())
-            Button("Bright +") { media(ConsumerUsage.brightnessUp) }.buttonStyle(KeyButtonStyle())
-            Button("Prev") { media(ConsumerUsage.previousTrack) }.buttonStyle(KeyButtonStyle())
-            Button("Next") { media(ConsumerUsage.nextTrack) }.buttonStyle(KeyButtonStyle())
-        }
-    }
-
     // MARK: Actions
 
     /// Single key, with any sticky modifiers applied.
@@ -185,11 +163,6 @@ struct SpecialKeysPanel: View {
     private func shortcut(_ mods: UInt8, _ key: UInt8) {
         Haptics.key()
         ble.keyTap(modifiers: mods, key: key)
-    }
-
-    private func media(_ usage: UInt16) {
-        Haptics.key()
-        ble.consumer(usage)
     }
 
     private func altTabBegin() {

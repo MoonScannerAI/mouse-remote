@@ -52,17 +52,17 @@ final class TouchpadView: UIView {
     private func setup() {
         isMultipleTouchEnabled = true
         isExclusiveTouch = false
-        backgroundColor = UIColor(white: 0.11, alpha: 1)
+        backgroundColor = Palette.uiTouchpadFill
         layer.cornerRadius = 22
         layer.cornerCurve = .continuous
         layer.borderWidth = 1
-        layer.borderColor = UIColor(white: 0.22, alpha: 1).cgColor
+        layer.borderColor = Palette.uiTouchpadBorder.cgColor
 
         hintLabel.text = "Tap to click · 2-finger tap for right click\n2 fingers to scroll · double-tap & hold to drag"
         hintLabel.numberOfLines = 2
         hintLabel.textAlignment = .center
         hintLabel.font = .systemFont(ofSize: 12)
-        hintLabel.textColor = UIColor(white: 0.4, alpha: 1)
+        hintLabel.textColor = Palette.uiTextSecondary
         hintLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(hintLabel)
         NSLayoutConstraint.activate([

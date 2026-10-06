@@ -22,10 +22,10 @@ struct StatusBarView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(ble.state.title)
                     .font(.headline)
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(Palette.text)
                 Text(ble.detail)
                     .font(.caption)
-                    .foregroundStyle(Color.gray)
+                    .foregroundStyle(Palette.textSecondary)
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
@@ -34,7 +34,7 @@ struct StatusBarView: View {
             } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(Palette.text)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }

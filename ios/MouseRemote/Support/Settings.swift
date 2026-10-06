@@ -6,6 +6,7 @@ enum SettingsKey {
     static let scrollSpeed = "settings.scrollSpeed"
     static let naturalScroll = "settings.naturalScroll"
     static let haptics = "settings.haptics"
+    static let showKeys = "settings.showKeys"
 }
 
 enum SettingsDefault {
@@ -13,4 +14,5 @@ enum SettingsDefault {
     static let scrollSpeed: Double = 1.0
     static let naturalScroll: Bool = true
     static let haptics: Bool = true
+    static let showKeys: Bool = true
 }

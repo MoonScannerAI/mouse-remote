@@ -6,8 +6,9 @@ import UIKit
 final class HoldButtonView: UIView {
     var onDown: (@MainActor () -> Void)?
     var onUp: (@MainActor () -> Void)?
-    var normalColor = UIColor(white: 0.17, alpha: 1) { didSet { refresh() } }
-    var pressedColor = UIColor(white: 0.34, alpha: 1) { didSet { refresh() } }
+    var normalColor = Palette.uiKeyFill { didSet { refresh() } }
+    var pressedColor = Palette.uiKeyPressed { didSet { refresh() } }
+    var pressedTextColor = Palette.uiText { didSet { refresh() } }
 
     let titleLabel = UILabel()
     private var isDown = false
@@ -18,8 +19,10 @@ final class HoldButtonView: UIView {
         isExclusiveTouch = false
         layer.cornerRadius = 16
         layer.cornerCurve = .continuous
+        layer.borderWidth = 1.5
+        layer.borderColor = Palette.uiKeyBorder.cgColor
         titleLabel.textAlignment = .center
-        titleLabel.textColor = .white
+        titleLabel.textColor = Palette.uiText
         titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         titleLabel.adjustsFontSizeToFitWidth = true
         titleLabel.minimumScaleFactor = 0.6
@@ -42,6 +45,7 @@ final class HoldButtonView: UIView {
 
     private func refresh() {
         backgroundColor = isDown ? pressedColor : normalColor
+        titleLabel.textColor = isDown ? pressedTextColor : Palette.uiText
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -73,8 +77,9 @@ final class HoldButtonView: UIView {
 struct HoldButton: UIViewRepresentable {
     let title: String
     var fontSize: CGFloat = 17
-    var color: UIColor = UIColor(white: 0.17, alpha: 1)
-    var pressedColor: UIColor = UIColor(white: 0.34, alpha: 1)
+    var color: UIColor = Palette.uiKeyFill
+    var pressedColor: UIColor = Palette.uiKeyPressed
+    var pressedTextColor: UIColor = Palette.uiText
     let onDown: @MainActor () -> Void
     var onUp: @MainActor () -> Void = {}
 
@@ -94,6 +99,7 @@ struct HoldButton: UIViewRepresentable {
         view.accessibilityLabel = title
         view.normalColor = color
         view.pressedColor = pressedColor
+        view.pressedTextColor = pressedTextColor
         view.onDown = onDown
         view.onUp = onUp
     }

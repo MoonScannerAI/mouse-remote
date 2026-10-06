@@ -32,7 +32,7 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        UIUserInterfaceStyle: Dark
+        UIUserInterfaceStyle: Light
     settings:
       base:
         PRODUCT_NAME: MouseRemote

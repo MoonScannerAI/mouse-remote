@@ -11,7 +11,7 @@ struct MouseRemoteApp: App {
             ContentView()
                 .environmentObject(ble)
                 .environmentObject(modifiers)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(.light)
                 .tint(.blue)
         }
     }

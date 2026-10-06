@@ -10,9 +10,9 @@ struct ContentView: View {
     @AppStorage(SettingsKey.pointerSpeed) private var pointerSpeed: Double = SettingsDefault.pointerSpeed
     @AppStorage(SettingsKey.scrollSpeed) private var scrollSpeed: Double = SettingsDefault.scrollSpeed
     @AppStorage(SettingsKey.naturalScroll) private var naturalScroll: Bool = SettingsDefault.naturalScroll
+    @AppStorage(SettingsKey.showKeys) private var showKeys: Bool = SettingsDefault.showKeys
 
     @State private var showSettings = false
-    @State private var showKeys = true
     @State private var keyboardActive = false
 
     var body: some View {
@@ -27,8 +27,11 @@ struct ContentView: View {
 
             toolbarRow
 
-            if showKeys {
-                SpecialKeysPanel()
+            VStack(spacing: 8) {
+                ModifierRow()
+                if showKeys {
+                    SpecialKeysPanel()
+                }
             }
 
             HStack(spacing: 10) {
@@ -49,7 +52,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
-        .background(Color.black.ignoresSafeArea())
+        .background(Palette.pageBackground.ignoresSafeArea())
         .background(
             KeyboardCapture(isActive: $keyboardActive, ble: ble, modifiers: modifiers)
                 .frame(width: 1, height: 1)
@@ -90,7 +93,9 @@ struct ContentView: View {
                 Label(keyboardActive ? "Hide Keyboard" : "Keyboard",
                       systemImage: keyboardActive ? "keyboard.chevron.compact.down" : "keyboard")
             }
-            .buttonStyle(KeyButtonStyle(fill: keyboardActive ? Color.accentColor : Color(white: 0.17)))
+            .buttonStyle(KeyButtonStyle(fill: keyboardActive ? Palette.accent : Palette.keyFill,
+                                        stroke: keyboardActive ? Palette.accent : Palette.keyBorder,
+                                        textColor: keyboardActive ? Palette.onAccent : Palette.text))
         }
     }
 }
