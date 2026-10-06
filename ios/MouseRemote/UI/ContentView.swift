@@ -13,7 +13,7 @@ struct ContentView: View {
     @AppStorage(SettingsKey.showKeys) private var showKeys: Bool = SettingsDefault.showKeys
 
     @State private var showSettings = false
-    @State private var keyboardActive = false
+    @State private var keyboardActive = true
 
     var body: some View {
         VStack(spacing: 10) {

@@ -24,7 +24,7 @@ struct KeyboardCapture: UIViewRepresentable {
         textView.backgroundColor = .clear
         textView.textColor = .clear
         textView.tintColor = .clear
-        textView.keyboardAppearance = .dark
+        textView.keyboardAppearance = .light
         textView.isScrollEnabled = false
         context.coordinator.resetShadow(textView)
         return textView
@@ -35,7 +35,15 @@ struct KeyboardCapture: UIViewRepresentable {
         context.coordinator.ble = ble
         context.coordinator.modifiers = modifiers
         if isActive && !textView.isFirstResponder {
-            textView.becomeFirstResponder()
+            if !textView.becomeFirstResponder() {
+                // Not in a window yet (keyboard shown at launch): retry once attached.
+                let coordinator = context.coordinator
+                DispatchQueue.main.async { [weak textView] in
+                    if coordinator.isActive.wrappedValue {
+                        textView?.becomeFirstResponder()
+                    }
+                }
+            }
         } else if !isActive && textView.isFirstResponder {
             textView.resignFirstResponder()
         }

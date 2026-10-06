@@ -14,5 +14,5 @@ enum SettingsDefault {
     static let scrollSpeed: Double = 1.0
     static let naturalScroll: Bool = true
     static let haptics: Bool = true
-    static let showKeys: Bool = true
+    static let showKeys: Bool = false
 }
