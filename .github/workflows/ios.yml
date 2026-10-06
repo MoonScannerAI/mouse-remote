@@ -32,12 +32,18 @@ jobs:
     timeout-minutes: 45
     env:
       SCHEME: MouseRemote
-      KEY_PATH: ${{ runner.temp }}/AuthKey.p8
-      ARCHIVE_PATH: ${{ runner.temp }}/MouseRemote.xcarchive
-      EXPORT_PATH: ${{ runner.temp }}/export
-      EXPORT_OPTIONS: ${{ runner.temp }}/ExportOptions.plist
     steps:
       - uses: actions/checkout@v4
+
+      # The runner context isn't available in job-level env, so derive paths here.
+      - name: Set paths
+        run: |
+          {
+            echo "KEY_PATH=$RUNNER_TEMP/AuthKey.p8"
+            echo "ARCHIVE_PATH=$RUNNER_TEMP/MouseRemote.xcarchive"
+            echo "EXPORT_PATH=$RUNNER_TEMP/export"
+            echo "EXPORT_OPTIONS=$RUNNER_TEMP/ExportOptions.plist"
+          } >> "$GITHUB_ENV"
 
       # App Store Connect requires Xcode 26+ (iOS 26 SDK) for uploads.
       - name: Select Xcode
@@ -137,4 +143,4 @@ jobs:
 
       - name: Remove API key
         if: always()
-        run: rm -f "$KEY_PATH"
+        run: rm -f "${KEY_PATH:-}"
