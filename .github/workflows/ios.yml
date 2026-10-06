@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 45
     env:
       SCHEME: MouseRemote
+      # TestFlight steps run only once the App Store Connect secrets exist.
+      HAS_ASC: ${{ secrets.ASC_KEY_P8 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -62,8 +64,9 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
-      # Proves the code compiles even before Apple secrets are configured.
-      - name: Compile check (unsigned)
+      # Unsigned build: proves the code compiles, and produces an .ipa that
+      # Sideloadly can sign with any (free) Apple ID.
+      - name: Build unsigned
         working-directory: ios
         run: |
           set -o pipefail
@@ -72,10 +75,30 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Release \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             | tee "$RUNNER_TEMP/build.log"
 
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/MouseRemote.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$RUNNER_TEMP/MouseRemote-unsigned.ipa" Payload)
+          ls -l "$RUNNER_TEMP/MouseRemote-unsigned.ipa"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseRemote-unsigned-ipa
+          path: ${{ runner.temp }}/MouseRemote-unsigned.ipa
+          retention-days: 30
+
       - name: Write App Store Connect API key
+        if: env.HAS_ASC == 'true'
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
@@ -89,6 +112,7 @@ jobs:
           grep -q "BEGIN PRIVATE KEY" "$KEY_PATH" || { echo "::error::ASC_KEY_P8 is not a valid .p8 key"; exit 1; }
 
       - name: Archive
+        if: env.HAS_ASC == 'true'
         working-directory: ios
         run: |
           set -o pipefail
@@ -107,6 +131,7 @@ jobs:
             | tee "$RUNNER_TEMP/archive.log"
 
       - name: Create ExportOptions.plist
+        if: env.HAS_ASC == 'true'
         run: |
           cat > "$EXPORT_OPTIONS" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -127,6 +152,7 @@ jobs:
       # destination=upload makes xcodebuild sign (cloud distribution cert) and
       # upload straight to App Store Connect / TestFlight.
       - name: Export and upload to TestFlight
+        if: env.HAS_ASC == 'true'
         run: |
           set -o pipefail
           xcodebuild -exportArchive \
